@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'A serverless backend for Cognito Hosted UI authentication.
+
+  '
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs20.x
+    MemorySize: 128
+    Environment:
+      Variables:
+        COGNITO_DOMAIN: https://ap-south-1rjue59owd.auth.ap-south-1.amazoncognito.com
+        COGNITO_CLIENT_ID: 6jnbb6ufrib67gkuq9ogb4a5v4
+        COGNITO_CLIENT_SECRET: ho80kt7ru8t0ab48ren6qaj9jsi622n620bt8ijss7ullmu9l1h
+        APP_BASE_URL: https://uqfhnwhpb4.execute-api.ap-south-1.amazonaws.com
+Resources:
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: DependenciesLayer
+      CompatibleRuntimes:
+      - nodejs20.x
+    Metadata:
+      BuildMethod: nodejs20.x
+      SamResourceId: DependenciesLayer
+  AuthApi:
+    Type: AWS::Serverless::HttpApi
+  AuthRedirectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: AuthRedirectFunction
+      Handler: authRedirect.handler
+      Layers:
+      - Ref: DependenciesLayer
+      Events:
+        LoginEvent:
+          Type: HttpApi
+          Properties:
+            Path: /login
+            Method: get
+            ApiId:
+              Ref: AuthApi
+    Metadata:
+      SamResourceId: AuthRedirectFunction
+  AuthCallbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: AuthCallbackFunction
+      Handler: authCallback.handler
+      Layers:
+      - Ref: DependenciesLayer
+      Events:
+        CallbackEvent:
+          Type: HttpApi
+          Properties:
+            Path: /auth/callback
+            Method: get
+            ApiId:
+              Ref: AuthApi
+    Metadata:
+      SamResourceId: AuthCallbackFunction
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${AuthApi}.execute-api.${AWS::Region}.amazonaws.com

@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  A serverless backend for Cognito Hosted UI authentication.
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs20.x
+    MemorySize: 128
+    # Teaching Point: We define environment variables globally.
+    # Replace these placeholders with your actual Cognito values.
+    Environment:
+      Variables:
+        COGNITO_DOMAIN: https://ap-south-1rjue59owd.auth.ap-south-1.amazoncognito.com
+        COGNITO_CLIENT_ID: 6jnbb6ufrib67gkuq9ogb4a5v4
+        COGNITO_CLIENT_SECRET: ho80kt7ru8t0ab48ren6qaj9jsi622n620bt8ijss7ullmu9l1h
+        APP_BASE_URL: https://uqfhnwhpb4.execute-api.ap-south-1.amazonaws.com
+
+Resources:
+  # Teaching Point: This defines our Lambda Layer for dependencies.
+  # SAM will automatically build the dependencies from src/layers/nodejs.
+  DependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: src/layers/
+      CompatibleRuntimes:
+        - nodejs20.x
+    Metadata:
+      BuildMethod: nodejs20.x
+
+  # Teaching Point: This defines our API Gateway.
+  AuthApi:
+    Type: AWS::Serverless::HttpApi
+
+  # Lambda function for the /login route
+  AuthRedirectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: authRedirect.handler
+      Layers:  # <-- ADD THIS SECTION
+      - !Ref DependenciesLayer
+      Events:
+        LoginEvent:
+          Type: HttpApi
+          Properties:
+            Path: /login
+            Method: get
+            ApiId: !Ref AuthApi 
+
+  # Lambda function for the /callback route
+  AuthCallbackFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: authCallback.handler
+      Layers:  # <-- ADD THIS SECTION
+      - !Ref DependenciesLayer
+      Events:
+        CallbackEvent:
+          Type: HttpApi
+          Properties:
+            Path: /auth/callback
+            Method: get
+            ApiId: !Ref AuthApi
+
+Outputs:
+  # This output will show you the URL of your deployed API Gateway
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${AuthApi}.execute-api.${AWS::Region}.amazonaws.com" 
