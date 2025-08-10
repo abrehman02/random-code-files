@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Google OAuth Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 2.2rem;
+            font-weight: 300;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+        .btn:hover {
+            background: #3367d6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+        }
+        .btn.logout {
+            background: #ea4335;
+        }
+        .btn.logout:hover {
+            background: #d33b2c;
+            box-shadow: 0 4px 12px rgba(234, 67, 53, 0.3);
+        }
+        .profile-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .profile-section h3 {
+            margin-top: 0;
+            color: #4285f4;
+            font-size: 1.3rem;
+        }
+        .profile-data {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #e1e5e9;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            color: #666;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4285f4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #feb2b2;
+            margin-bottom: 1rem;
+        }
+        .success {
+            background: #f0fff4;
+            color: #22543d;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #9ae6b4;
+            margin-bottom: 1rem;
+        }
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: block;
+            border: 3px solid #4285f4;
+        }
+        .user-info {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .user-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .user-email {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        .session-info {
+            background: #fff8e1;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #ffc107;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #b7791f;
+        }
+        .api-section {
+            margin-top: 2rem;
+        }
+        .api-section h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        .json-viewer {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            white-space: pre;
+        }
+        .json-key {
+            color: #63b3ed;
+        }
+        .json-string {
+            color: #68d391;
+        }
+        .json-number {
+            color: #f6ad55;
+        }
+        .json-boolean {
+            color: #fc8181;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Dashboard</h1>
+            <p class="subtitle">Welcome to your secure dashboard</p>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn" onclick="fetchProfile()">Fetch Profile</button>
+            <button class="btn logout" onclick="logout()">Logout</button>
+        </div>
+
+        <div id="message-area"></div>
+
+        <div class="profile-section">
+            <h3>🔐 Protected API Response</h3>
+            <div id="profile-data" class="profile-data">
+                Click "Fetch Profile" to retrieve your user data from the protected API endpoint.
+                
+This will demonstrate:
+• JWT cookie authentication
+• Protected API access
+• Server-side token verification
+            </div>
+        </div>
+
+        <div class="session-info">
+            ⚠️ <strong>Session expires in 5 minutes</strong> - This is a demo with short-lived sessions for testing
+        </div>
+
+        <div class="api-section">
+            <h3>🛡️ Security Features Demonstrated</h3>
+            <ul>
+                <li><strong>HttpOnly Cookies:</strong> JWT stored securely to prevent XSS attacks</li>
+                <li><strong>Server-side Verification:</strong> All tokens validated on the backend</li>
+                <li><strong>Short-lived Sessions:</strong> 5-minute expiry for enhanced security</li>
+                <li><strong>OAuth 2.0 Flow:</strong> Standard authorization code flow with Google</li>
+                <li><strong>CSRF Protection:</strong> SameSite cookie attribute prevents CSRF</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let profileData = null;
+
+        // Check authentication status on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthentication();
+        });
+
+        async function checkAuthentication() {
+            try {
+                const response = await fetch('/api/profile');
+                if (!response.ok) {
+                    // Not authenticated, redirect to login
+                    window.location.href = '/';
+                    return;
+                }
+                // User is authenticated, optionally auto-fetch profile
+                // fetchProfile();
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/';
+            }
+        }
+
+        async function fetchProfile() {
+            const messageArea = document.getElementById('message-area');
+            const profileDataElement = document.getElementById('profile-data');
+            
+            // Clear previous messages
+            messageArea.innerHTML = '';
+            
+            // Show loading state
+            profileDataElement.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Fetching profile data from protected API...
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'GET',
+                    credentials: 'include' // Important: include cookies
+                });
+
+                if (response.ok) {
+                    profileData = await response.json();
+                    displayProfile(profileData);
+                    showMessage('Profile data fetched successfully!', 'success');
+                } else if (response.status === 401) {
+                    showMessage('Authentication failed - session may have expired', 'error');
+                    profileDataElement.innerHTML = 'Authentication required. Please login again.';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else if (response.status === 403) {
+                    showMessage('Access forbidden - invalid token', 'error');
+                    profileDataElement.innerHTML = 'Access denied. Token may be invalid.';
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+                profileDataElement.innerHTML = `Failed to fetch profile data: ${error.message}`;
+            }
+        }
+
+        function displayProfile(data) {
+            const profileDataElement = document.getElementById('profile-data');
+            
+            // Create formatted display
+            let displayHtml = '';
+            
+            // User info section
+            if (data.picture) {
+                displayHtml += `<img src="${data.picture}" class="user-avatar" alt="Profile Picture">`;
+            }
+            
+            displayHtml += `
+                <div class="user-info">
+                    <div class="user-name">${data.name || 'Unknown User'}</div>
+                    <div class="user-email">${data.email || 'No email'}</div>
+                </div>
+            `;
+            
+            // Raw JSON data
+            displayHtml += `<div class="json-viewer">${formatJson(data)}</div>`;
+            
+            profileDataElement.innerHTML = displayHtml;
+        }
+
+        function formatJson(obj) {
+            return JSON.stringify(obj, null, 2)
+                .replace(/(".*?"):/g, '<span class="json-key">$1</span>:')
+                .replace(/: (".*?")/g, ': <span class="json-string">$1</span>')
+                .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
+                .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+        }
+
+        async function logout() {
+            const messageArea = document.getElementById('message-area');
+            
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    showMessage('Logging out...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    throw new Error('Logout failed');
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                showMessage('Logout failed, redirecting anyway...', 'error');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            }
+        }
+
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('message-area');
+            messageArea.innerHTML = `<div class="${type}">${message}</div>`;
+            
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        // Auto-refresh session warning
+        let sessionWarningShown = false;
+        setTimeout(() => {
+            if (!sessionWarningShown) {
+                showMessage('Session expires soon! You may need to re-authenticate.', 'error');
+                sessionWarningShown = true;
+            }
+        }, 4 * 60 * 1000); // Show warning after 4 minutes (1 minute before expiry)
+    </script>
+</body>
+</html>
